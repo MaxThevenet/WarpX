@@ -5,6 +5,8 @@ amr.max_level = 1
 
 # particles.deposit_on_main_grid = electron
 
+particles.gather_from_main_grid = electron
+
 warpx.do_subcycling = 0
 warpx.do_pml = 0
 warpx.pml_ncell = 7

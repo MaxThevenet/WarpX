@@ -41,23 +41,6 @@ namespace {
         solver.ForwardTransform(*Efield[0], Idx::Ex);
         solver.ForwardTransform(*Efield[1], Idx::Ey);
         solver.ForwardTransform(*Efield[2], Idx::Ez);
-        solver.ForwardTransform(*Bfield[0], Idx::Bx);
-        solver.ForwardTransform(*Bfield[1], Idx::By);
-        solver.ForwardTransform(*Bfield[2], Idx::Bz);
-        solver.ForwardTransform(*current[0], Idx::Jx);
-        solver.ForwardTransform(*current[1], Idx::Jy);
-        solver.ForwardTransform(*current[2], Idx::Jz);
-        solver.ForwardTransform(*rho, Idx::rho_old, 0);
-        solver.ForwardTransform(*rho, Idx::rho_new, 1);
-        // Advance fields in spectral space
-        solver.pushSpectralFields();
-        // Perform backward Fourier Transform
-        solver.BackwardTransform(*Efield[0], Idx::Ex);
-        solver.BackwardTransform(*Efield[1], Idx::Ey);
-        solver.BackwardTransform(*Efield[2], Idx::Ez);
-        solver.BackwardTransform(*Bfield[0], Idx::Bx);
-        solver.BackwardTransform(*Bfield[1], Idx::By);
-        solver.BackwardTransform(*Bfield[2], Idx::Bz);
     }
 }
 

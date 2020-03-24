@@ -84,7 +84,6 @@ WarpX::Evolve (int numsteps)
         }
         // End loop on time steps
     }
-
 }
 
 /* /brief Perform one PIC iteration, without subcycling

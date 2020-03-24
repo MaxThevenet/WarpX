@@ -213,3 +213,37 @@ WarpXParser makeParser (std::string const& parse_function, std::vector<std::stri
     }
     return parser;
 }
+
+namespace WarpXUtilMsg{
+
+void AlwaysAssert(bool is_expression_true, const std::string& msg = "ERROR!")
+{
+    if(is_expression_true) return;
+
+    amrex::Abort(msg);
+}
+
+}
+
+namespace WarpXUtilStr
+{
+    bool is_in(const std::vector<std::string>& vect,
+               const std::string& elem)
+    {
+        bool value = false;
+        if (std::find(vect.begin(), vect.end(), elem) != vect.end()){
+            value = true;
+        }
+        return value;
+    }
+
+    bool is_in(const std::vector<std::string>& vect,
+               const std::vector<std::string>& elems)
+    {
+        bool value = false;
+        for (auto elem : elems){
+            if (is_in(vect, elem)) value = true;
+        }
+        return value;
+    }
+}

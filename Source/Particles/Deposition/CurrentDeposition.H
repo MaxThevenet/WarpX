@@ -297,7 +297,7 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
 #if !(defined WARPX_DIM_RZ)
     Real const dtsdx0 = dt*dxi;
 #endif
-    Real const xmin = xyzmin[0];
+    double const xmin = xyzmin[0];
 #if (defined WARPX_DIM_3D)
     Real const dyi = 1.0_rt / dx[1];
     Real const dtsdy0 = dt*dyi;
@@ -305,7 +305,7 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
 #endif
     Real const dzi = 1.0_rt / dx[2];
     Real const dtsdz0 = dt*dzi;
-    Real const zmin = xyzmin[2];
+    double const zmin = xyzmin[2];
 
 #if (defined WARPX_DIM_3D)
     Real const invdtdx = 1.0_rt / (dt*dx[1]*dx[2]);
@@ -391,15 +391,15 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
             Real const x_new = (rp_new - xmin)*dxi;
             Real const x_old = (rp_old - xmin)*dxi;
 #else
-            Real const x_new = (xp - xmin)*dxi;
-            Real const x_old = x_new - dtsdx0*uxp[ip]*gaminv;
+            double const x_new = (xp - xmin)*dxi;
+            double const x_old = x_new - dtsdx0*uxp[ip]*gaminv;
 #endif
 #if (defined WARPX_DIM_3D)
             Real const y_new = (yp - ymin)*dyi;
             Real const y_old = y_new - dtsdy0*uyp[ip]*gaminv;
 #endif
-            Real const z_new = (zp - zmin)*dzi;
-            Real const z_old = z_new - dtsdz0*uzp[ip]*gaminv;
+            double const z_new = (zp - zmin)*dzi;
+            double const z_old = z_new - dtsdz0*uzp[ip]*gaminv;
 
 #if (defined WARPX_DIM_RZ)
             Real const vy = (-uxp[ip]*sintheta_mid + uyp[ip]*costheta_mid)*gaminv;

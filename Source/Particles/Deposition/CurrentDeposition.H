@@ -339,8 +339,11 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
                 wq *= ion_lev[ip];
             }
 
-            ParticleReal xp, yp, zp;
-            GetPosition(ip, xp, yp, zp);
+            ParticleReal xp0, yp0, zp0;
+            GetPosition(ip, xp0, yp0, zp0);
+            double xp = static_cast<double>(xp0);
+            double yp = static_cast<double>(yp0);
+            double zp = static_cast<double>(zp0);
 
             Real const wqx = wq*invdtdx;
 #if (defined WARPX_DIM_3D)

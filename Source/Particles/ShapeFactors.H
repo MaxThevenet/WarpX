@@ -14,7 +14,7 @@
  */
 template <int depos_order>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shape_factor(amrex::Real* const sx, amrex::Real xint)
+int compute_shape_factor(double* const sx, double xint)
 {
     return 0;
 };
@@ -26,7 +26,7 @@ int compute_shape_factor(amrex::Real* const sx, amrex::Real xint)
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shape_factor <0> (amrex::Real* const sx, amrex::Real xmid){
+int compute_shape_factor <0> (double* const sx, double xmid){
 
     using namespace amrex;
 
@@ -42,12 +42,12 @@ int compute_shape_factor <0> (amrex::Real* const sx, amrex::Real xmid){
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shape_factor <1> (amrex::Real* const sx, amrex::Real xmid){
+int compute_shape_factor <1> (double* const sx, double xmid){
 
     using namespace amrex;
 
     const auto j = static_cast<int>(xmid);
-    const amrex::Real xint = xmid-j;
+    const double xint = xmid-j;
     sx[0] = 1.0_rt - xint;
     sx[1] = xint;
     return j;
@@ -60,12 +60,12 @@ int compute_shape_factor <1> (amrex::Real* const sx, amrex::Real xmid){
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shape_factor <2> (amrex::Real* const sx, amrex::Real xmid){
+int compute_shape_factor <2> (double* const sx, double xmid){
 
     using namespace amrex;
 
     const auto j = static_cast<int>(xmid+0.5_rt);
-    const amrex::Real xint = xmid-j;
+    const double xint = xmid-j;
     sx[0] = 0.5_rt*(0.5_rt-xint)*(0.5_rt-xint);
     sx[1] = 0.75_rt-xint*xint;
     sx[2] = 0.5_rt*(0.5_rt+xint)*(0.5_rt+xint);
@@ -80,12 +80,12 @@ int compute_shape_factor <2> (amrex::Real* const sx, amrex::Real xmid){
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shape_factor <3> (amrex::Real* const sx, amrex::Real xmid){
+int compute_shape_factor <3> (double* const sx, double xmid){
 
     using namespace amrex;
 
     const auto j = static_cast<int>(xmid);
-    const amrex::Real xint = xmid-j;
+    const double xint = xmid-j;
     sx[0] = 1.0_rt/6.0_rt*(1.0_rt-xint)*(1.0_rt-xint)*(1.0_rt-xint);
     sx[1] = 2.0_rt/3.0_rt-xint*xint*(1.0_rt-xint/2.0_rt);
     sx[2] = 2.0_rt/3.0_rt-(1.0_rt-xint)*(1.0_rt-xint)*(1.0_rt-0.5_rt*(1.0_rt-xint));
@@ -101,8 +101,8 @@ int compute_shape_factor <3> (amrex::Real* const sx, amrex::Real xmid){
  */
 template <int depos_order>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shifted_shape_factor (amrex::Real* const sx,
-                                  const amrex::Real x_old,
+int compute_shifted_shape_factor (double* const sx,
+                                  const double x_old,
                                   const int i_new);
 
 /**
@@ -112,15 +112,15 @@ int compute_shifted_shape_factor (amrex::Real* const sx,
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shifted_shape_factor <1> (amrex::Real* const sx,
-                                      const amrex::Real x_old,
+int compute_shifted_shape_factor <1> (double* const sx,
+                                      const double x_old,
                                       const int i_new){
 
     using namespace amrex;
 
     const auto i = static_cast<int>(x_old);
     const int i_shift = i - i_new;
-    const amrex::Real xint = x_old - i;
+    const double xint = x_old - i;
     sx[1+i_shift] = 1.0_rt - xint;
     sx[2+i_shift] = xint;
     return i;
@@ -133,15 +133,15 @@ int compute_shifted_shape_factor <1> (amrex::Real* const sx,
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shifted_shape_factor <2> (amrex::Real* const sx,
-                                      const amrex::Real x_old,
+int compute_shifted_shape_factor <2> (double* const sx,
+                                      const double x_old,
                                       const int i_new){
 
     using namespace amrex;
 
     const auto i = static_cast<int>(x_old+0.5_rt);
     const int i_shift = i - (i_new + 1);
-    const amrex::Real xint = x_old - i;
+    const double xint = x_old - i;
     sx[1+i_shift] = 0.5_rt*(0.5_rt-xint)*(0.5_rt-xint);
     sx[2+i_shift] = 0.75_rt-xint*xint;
     sx[3+i_shift] = 0.5_rt*(0.5_rt+xint)*(0.5_rt+xint);
@@ -156,15 +156,15 @@ int compute_shifted_shape_factor <2> (amrex::Real* const sx,
  */
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-int compute_shifted_shape_factor <3> (amrex::Real* const sx,
-                                      const amrex::Real x_old,
+int compute_shifted_shape_factor <3> (double* const sx,
+                                      const double x_old,
                                       const int i_new){
 
     using namespace amrex;
 
     const auto i = static_cast<int>(x_old);
     const int i_shift = i - (i_new + 1);
-    const amrex::Real xint = x_old - i;
+    const double xint = x_old - i;
     sx[1+i_shift] = 1.0_rt/6.0_rt*(1.0_rt-xint)*(1.0_rt-xint)*(1.0_rt-xint);
     sx[2+i_shift] = 2.0_rt/3.0_rt-xint*xint*(1.0_rt-xint/2.0_rt);
     sx[3+i_shift] = 2.0_rt/3.0_rt-(1.0_rt-xint)*(1.0_rt-xint)*(1.0_rt-0.5_rt*(1.0_rt-xint));

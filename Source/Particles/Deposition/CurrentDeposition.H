@@ -339,8 +339,11 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
                 wq *= ion_lev[ip];
             }
 
-            ParticleReal xp, yp, zp;
-            GetPosition(ip, xp, yp, zp);
+            ParticleReal xp0, yp0, zp0;
+            GetPosition(ip, xp0, yp0, zp0);
+            double xp = static_cast<double>(xp0);
+            double yp = static_cast<double>(yp0);
+            double zp = static_cast<double>(zp0);
 
             Real const wqx = wq*invdtdx;
 #if (defined WARPX_DIM_3D)
@@ -388,15 +391,15 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
             Real const x_new = (rp_new - xmin)*dxi;
             Real const x_old = (rp_old - xmin)*dxi;
 #else
-            Real const x_new = (xp - xmin)*dxi;
-            Real const x_old = x_new - dtsdx0*uxp[ip]*gaminv;
+            double const x_new = (xp - xmin)*dxi;
+            double const x_old = x_new - dtsdx0*uxp[ip]*gaminv;
 #endif
 #if (defined WARPX_DIM_3D)
             Real const y_new = (yp - ymin)*dyi;
             Real const y_old = y_new - dtsdy0*uyp[ip]*gaminv;
 #endif
-            Real const z_new = (zp - zmin)*dzi;
-            Real const z_old = z_new - dtsdz0*uzp[ip]*gaminv;
+            double const z_new = (zp - zmin)*dzi;
+            double const z_old = z_new - dtsdz0*uzp[ip]*gaminv;
 
 #if (defined WARPX_DIM_RZ)
             Real const vy = (-uxp[ip]*sintheta_mid + uyp[ip]*costheta_mid)*gaminv;
@@ -408,14 +411,14 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
             // Note that there are extra values above and below
             // to possibly hold the factor for the old particle
             // which can be at a different grid location.
-            Real sx_new[depos_order + 3] = {0.};
-            Real sx_old[depos_order + 3] = {0.};
+            double sx_new[depos_order + 3] = {0.};
+            double sx_old[depos_order + 3] = {0.};
 #if (defined WARPX_DIM_3D)
             Real sy_new[depos_order + 3] = {0.};
             Real sy_old[depos_order + 3] = {0.};
 #endif
-            Real sz_new[depos_order + 3] = {0.};
-            Real sz_old[depos_order + 3] = {0.};
+            double sz_new[depos_order + 3] = {0.};
+            double sz_old[depos_order + 3] = {0.};
 
             // --- Compute shape factors
             // Compute shape factors for position as they are now and at old positions

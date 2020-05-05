@@ -293,9 +293,9 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
     // Whether ion_lev is a null pointer (do_ionization=0) or a real pointer
     // (do_ionization=1)
     bool const do_ionization = ion_lev;
-    Real const dxi = 1.0_rt / dx[0];
+    double const dxi = 1.0_rt / dx[0];
 #if !(defined WARPX_DIM_RZ)
-    Real const dtsdx0 = dt*dxi;
+    double const dtsdx0 = dt*dxi;
 #endif
     double const xmin = xyzmin[0];
 #if (defined WARPX_DIM_3D)
@@ -303,8 +303,8 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
     Real const dtsdy0 = dt*dyi;
     Real const ymin = xyzmin[1];
 #endif
-    Real const dzi = 1.0_rt / dx[2];
-    Real const dtsdz0 = dt*dzi;
+    double const dzi = 1.0_rt / dx[2];
+    double const dtsdz0 = dt*dzi;
     double const zmin = xyzmin[2];
 
 #if (defined WARPX_DIM_3D)
@@ -328,10 +328,14 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
         np_to_depose,
         [=] AMREX_GPU_DEVICE (long const ip) {
 
+            double uxpi = uxp[ip];
+            double uypi = uyp[ip];
+            double uzpi = uzp[ip];
+
             // --- Get particle quantities
-        Real const gaminv = 1.0/std::sqrt(1.0 + uxp[ip]*uxp[ip]*clightsq
-                                              + uyp[ip]*uyp[ip]*clightsq
-                                              + uzp[ip]*uzp[ip]*clightsq);
+            double const gaminv = 1.0/std::sqrt(1.0 + uxpi*uxpi*clightsq
+                                                + uypi*uypi*clightsq
+                                                + uzpi*uzpi*clightsq);
 
             // wqx, wqy wqz are particle current in each direction
             Real wq = q*wp[ip];
@@ -392,19 +396,19 @@ void doEsirkepovDepositionShapeN (const GetParticlePosition& GetPosition,
             Real const x_old = (rp_old - xmin)*dxi;
 #else
             double const x_new = (xp - xmin)*dxi;
-            double const x_old = x_new - dtsdx0*uxp[ip]*gaminv;
+            double const x_old = x_new - dtsdx0*uxpi*gaminv;
 #endif
 #if (defined WARPX_DIM_3D)
             Real const y_new = (yp - ymin)*dyi;
             Real const y_old = y_new - dtsdy0*uyp[ip]*gaminv;
 #endif
             double const z_new = (zp - zmin)*dzi;
-            double const z_old = z_new - dtsdz0*uzp[ip]*gaminv;
+            double const z_old = z_new - dtsdz0*uzpi*gaminv;
 
 #if (defined WARPX_DIM_RZ)
             Real const vy = (-uxp[ip]*sintheta_mid + uyp[ip]*costheta_mid)*gaminv;
 #elif (defined WARPX_DIM_XZ)
-            Real const vy = uyp[ip]*gaminv;
+            Real const vy = uypi*gaminv;
 #endif
 
             // Shape factor arrays

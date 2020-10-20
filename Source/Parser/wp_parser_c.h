@@ -14,7 +14,7 @@
 
 struct wp_parser* wp_c_parser_new (char const* function_body);
 
-template <int Depth, std::enable_if_t<(Depth<WARPX_PARSER_DEPTH), int> = 0>
+template <int Depth>
 AMREX_GPU_HOST_DEVICE
 #ifdef AMREX_USE_GPU
 AMREX_NO_INLINE
@@ -43,40 +43,40 @@ wp_ast_eval (struct wp_node* node, amrex::Real const* x)
     }
     case WP_ADD:
     {
-        result = wp_ast_eval<Depth+1>(node->l,x) + wp_ast_eval<Depth+1>(node->r,x);
+        result = wp_ast_eval<Depth>(node->l,x) + wp_ast_eval<Depth>(node->r,x);
         break;
     }
     case WP_SUB:
     {
-        result = wp_ast_eval<Depth+1>(node->l,x) - wp_ast_eval<Depth+1>(node->r,x);
+        result = wp_ast_eval<Depth>(node->l,x) - wp_ast_eval<Depth>(node->r,x);
         break;
     }
     case WP_MUL:
     {
-        result = wp_ast_eval<Depth+1>(node->l,x) * wp_ast_eval<Depth+1>(node->r,x);
+        result = wp_ast_eval<Depth>(node->l,x) * wp_ast_eval<Depth>(node->r,x);
         break;
     }
     case WP_DIV:
     {
-        result = wp_ast_eval<Depth+1>(node->l,x) / wp_ast_eval<Depth+1>(node->r,x);
+        result = wp_ast_eval<Depth>(node->l,x) / wp_ast_eval<Depth>(node->r,x);
         break;
     }
     case WP_NEG:
     {
-        result = -wp_ast_eval<Depth+1>(node->l,x);
+        result = -wp_ast_eval<Depth>(node->l,x);
         break;
     }
     case WP_F1:
     {
         result = wp_call_f1(((struct wp_f1*)node)->ftype,
-                wp_ast_eval<Depth+1>(((struct wp_f1*)node)->l,x));
+                wp_ast_eval<Depth>(((struct wp_f1*)node)->l,x));
         break;
     }
     case WP_F2:
     {
         result = wp_call_f2(((struct wp_f2*)node)->ftype,
-                wp_ast_eval<Depth+1>(((struct wp_f2*)node)->l,x),
-                wp_ast_eval<Depth+1>(((struct wp_f2*)node)->r,x));
+                wp_ast_eval<Depth>(((struct wp_f2*)node)->l,x),
+                wp_ast_eval<Depth>(((struct wp_f2*)node)->r,x));
         break;
     }
     case WP_ADD_VP:
@@ -184,6 +184,7 @@ wp_ast_eval (struct wp_node* node, amrex::Real const* x)
     return result;
 }
 
+/*
 template <int Depth, std::enable_if_t<Depth == WARPX_PARSER_DEPTH,int> = 0>
 AMREX_GPU_HOST_DEVICE
 #ifdef AMREX_USE_GPU
@@ -201,6 +202,7 @@ wp_ast_eval (struct wp_node* node, amrex::Real const* x)
 #endif
     return 0.;
 }
+*/
 
 inline
 void

@@ -41,6 +41,126 @@ WarpX::Evolve (int numsteps)
 
     Real walltime, walltime_start = amrex::second();
 
+    Efield_fp_half[0][0]->setVal(0.);
+    Efield_fp_half[0][1]->setVal(0.);
+    Efield_fp_half[0][2]->setVal(0.);
+    Bfield_fp_half[0][0]->setVal(0.);
+    Bfield_fp_half[0][1]->setVal(0.);
+    Bfield_fp_half[0][2]->setVal(0.);
+
+    for (int step = istep[0]; step < numsteps_max && cur_time < stop_time; ++step)
+    {
+        multi_diags->NewIteration();
+
+        using namespace amrex;
+        constexpr int lev = 0;
+        Real constexpr c = PhysConst::c;
+        Real constexpr mu0 = PhysConst::mu0;
+        std::array<Real,3> dx = CellSize(lev);
+        amrex::MultiFab mf_Ez_tmp(Efield_fp_half[lev][2]->boxArray(),
+                                  Efield_fp_half[lev][2]->DistributionMap(), 1,
+                                  Efield_fp_half[lev][2]->nGrowVect());
+        amrex::MultiFab mf_By_tmp(Bfield_fp_half[lev][1]->boxArray(),
+                                  Bfield_fp_half[lev][1]->DistributionMap(), 1,
+                                  Bfield_fp_half[lev][1]->nGrowVect());
+        // push half-time Ez and By
+        mf_Ez_tmp.ParallelCopy(*Efield_fp_half[lev][2],0,0,1);
+        mf_By_tmp.ParallelCopy(*Bfield_fp_half[lev][1],0,0,1);
+        Efield_fp_half[lev][2]->setVal(0.);
+        Efield_fp_half[lev][1]->setVal(0.);
+        amrex::Print()<<mf_Ez_tmp.max(0)<<'\n';
+        amrex::Print()<<mf_By_tmp.max(0)<<'\n';
+    
+        for ( MFIter mfi(*Efield_fp_half[lev][0], false); mfi.isValid(); ++mfi )  {
+            Array4<Real> const& Ez = Efield_fp[lev][2]->array(mfi);
+            Array4<Real> const& By = Bfield_fp[lev][1]->array(mfi);
+            Array4<Real> const& Ezh = Efield_fp_half[lev][2]->array(mfi);
+            Array4<Real> const& Byh = Bfield_fp_half[lev][1]->array(mfi);
+            Array4<Real> const& Ez_tmp = mf_Ez_tmp.array(mfi);
+            Array4<Real> const& By_tmp = mf_By_tmp.array(mfi);
+            Array4<Real> const& jz = current_fp[lev][2]->array(mfi);
+            Array4<Real> const& jzo = current_fp_old[lev][2]->array(mfi);
+
+            Box const& tez  = mfi.tilebox(Efield_fp_half[lev][2]->ixType().toIntVect());
+            Box const& tby  = mfi.tilebox(Bfield_fp_half[lev][1]->ixType().toIntVect());
+            amrex::Print()<<tez<<'\n';
+            amrex::Print()<<tby<<'\n';
+            amrex::ParallelFor(
+                tez,
+                [=] (int i, int j, int k) {
+                    //const amrex::Real gamma_z = - c*mu0*(jz(i,j,0)+jzo(i,j,0))/2._rt + c*(By(i+1,j,0)-By(i,j,0))/dx[0];
+                    //Ezh(i,j,0) = Ez_tmp(i,j,0) + dx[2]*gamma_z;
+                    //const amrex::Real gamma_z = c*(By(i+1,j,0)-By(i,j,0))/dx[0];
+                    const amrex::Real gamma_z = c*(By(i,j,0)-By(i-1,j,0))/dx[0];
+                    Ezh(i,j,0) = Ez_tmp(i,j,0) + dx[2]*gamma_z;
+                });
+            amrex::ParallelFor(
+                tby,
+                [=] (int i, int j, int k) {
+                    // amrex::Real phi_y = (Ez(i+1,j  ,0)-Ez(i  ,j  ,0))/(1._rt*dx[0]);
+                    // Byh(i,j,0) = By_tmp(i,j,0) + phi_y*dx[2]/c;
+                    const amrex::Real phi_y_p = (Ez(i+1,j  ,0)-Ez(i  ,j  ,0))/dx[0];
+                    Byh(i,j,0) = By_tmp(i,j,0) + phi_y_p*dx[2]/c;
+                });
+        }
+
+        Efield_fp_half[lev][2]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+        Bfield_fp_half[lev][1]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+
+        // push half-time Ez and By
+        mf_Ez_tmp.ParallelCopy(*Efield_fp[lev][2],0,0,1);
+        mf_By_tmp.ParallelCopy(*Efield_fp[lev][1],0,0,1);
+        Efield_fp[lev][2]->setVal(0.);
+        Efield_fp[lev][1]->setVal(0.);
+        for ( MFIter mfi(*Efield_fp[lev][0], false); mfi.isValid(); ++mfi )  {
+            Array4<Real> const& Ez = Efield_fp[lev][2]->array(mfi);
+            Array4<Real> const& By = Bfield_fp[lev][1]->array(mfi);
+            Array4<Real> const& Ezh = Efield_fp_half[lev][2]->array(mfi);
+            Array4<Real> const& Byh = Bfield_fp_half[lev][1]->array(mfi);
+            Array4<Real> const& Ez_tmp = mf_Ez_tmp.array(mfi);
+            Array4<Real> const& By_tmp = mf_By_tmp.array(mfi);
+            Array4<Real> const& jz = current_fp[lev][2]->array(mfi);
+            Array4<Real> const& jzo = current_fp_old[lev][2]->array(mfi);
+            Box const& tez  = mfi.tilebox(Efield_fp[lev][2]->ixType().toIntVect());
+            Box const& tby  = mfi.tilebox(Bfield_fp[lev][1]->ixType().toIntVect());
+            amrex::ParallelFor(
+                tez,
+                [=] (int i, int j, int k) {
+                    const amrex::Real gamma_z = - c*mu0*jz(i,j,0)+ c*(Byh(i,j,0)-Byh(i-1,j,0))/dx[0];
+                    Ez(i,j,0) = Ez_tmp(i,j,0) + dx[2]*gamma_z;
+                });
+            amrex::ParallelFor(
+                tby,
+                [=] (int i, int j, int k) {
+                    amrex::Real phi_y = (Ezh(i+1,j  ,0)-Ezh(i  ,j  ,0))/(1._rt*dx[0]);
+                    By(i,j,0) = By_tmp(i,j,0) + phi_y*dx[2]/c;
+
+                    //const amrex::Real phi_y_p = (Ezh(i+1,j  ,0)-Ezh(i  ,j  ,0))/dx[0];
+                    //By(i,j,0) = By_tmp(i,j,0) + phi_y_p*dx[2]/c;
+                });
+        }
+
+        Efield_fp[lev][2]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+        Bfield_fp[lev][1]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+
+
+
+        
+        
+
+        // OneStep_nosub(cur_time);
+        ++istep[0];
+        cur_time += dt[0];
+        t_new[0] = cur_time;
+        multi_diags->FilterComputePackFlush( step );
+        // if (step == numsteps_max-1) multi_diags->FilterComputePackFlush( step );
+    }
+    multi_diags->FilterComputePackFlush( istep[0], true );
+
+    return;
+
+    amrex::Print()<<"SHOULD NOT BE HERE\n";
+    
     for (int step = istep[0]; step < numsteps_max && cur_time < stop_time; ++step)
     {
         Real walltime_beg_step = amrex::second();
@@ -51,7 +171,7 @@ WarpX::Evolve (int numsteps)
         amrex::Print() << "\nSTEP " << step+1 << " starts ...\n";
 
         if (warpx_py_beforestep) warpx_py_beforestep();
-
+/*
         amrex::LayoutData<amrex::Real>* cost = WarpX::getCosts(0);
         if (cost) {
             if (step > 0 && load_balance_intervals.contains(step+1))
@@ -77,7 +197,7 @@ WarpX::Evolve (int numsteps)
                 }
             }
         }
-
+*/
         // At the beginning, we have B^{n} and E^{n}.
         // Particles have p^{n} and x^{n}.
         // is_synchronized is true.
@@ -86,7 +206,7 @@ WarpX::Evolve (int numsteps)
                 // Not called at each iteration, so exchange all guard cells
                 FillBoundaryE(guard_cells.ng_alloc_EB);
                 FillBoundaryB(guard_cells.ng_alloc_EB);
-                UpdateAuxilaryData();
+                //UpdateAuxilaryData();
                 FillBoundaryAux(guard_cells.ng_UpdateAux);
             }
             // on first step, push p by -0.5*dt
@@ -115,7 +235,7 @@ WarpX::Evolve (int numsteps)
                 // TODO Remove call to FillBoundaryAux before UpdateAuxilaryData?
                 if (WarpX::maxwell_solver_id != MaxwellSolverAlgo::PSATD)
                     FillBoundaryAux(guard_cells.ng_UpdateAux);
-                UpdateAuxilaryData();
+                //UpdateAuxilaryData();
                 FillBoundaryAux(guard_cells.ng_UpdateAux);
             }
         }
@@ -173,7 +293,7 @@ WarpX::Evolve (int numsteps)
                 FillBoundaryE_avg(guard_cells.ng_FieldGather);
                 FillBoundaryB_avg(guard_cells.ng_FieldGather);
             }
-            UpdateAuxilaryData();
+            //UpdateAuxilaryData();
             FillBoundaryAux(guard_cells.ng_UpdateAux);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 mypc->PushP(lev, 0.5_rt*dt[lev],
@@ -403,6 +523,94 @@ WarpX::OneStep_nosub (Real cur_time)
         if (safe_guard_cells)
             FillBoundaryB(guard_cells.ng_alloc_EB);
     } else if (WarpX::maxwell_solver_id == MaxwellSolverAlgo::RIP) {
+        using namespace amrex;
+        constexpr int lev = 0;
+        Real constexpr c = PhysConst::c;
+        Real constexpr mu0 = PhysConst::mu0;
+        std::array<Real,3> dx = CellSize(lev);
+        amrex::MultiFab mf_Ez_tmp(Efield_fp_half[lev][2]->boxArray(),
+                                  Efield_fp_half[lev][2]->DistributionMap(), 1,
+                                  Efield_fp_half[lev][2]->nGrowVect());
+        amrex::MultiFab mf_By_tmp(Bfield_fp_half[lev][1]->boxArray(),
+                                  Bfield_fp_half[lev][1]->DistributionMap(), 1,
+                                  Bfield_fp_half[lev][1]->nGrowVect());
+        // push half-time Ez and By
+        mf_Ez_tmp.ParallelCopy(*Efield_fp_half[lev][2],0,0,1);
+        mf_By_tmp.ParallelCopy(*Bfield_fp_half[lev][1],0,0,1);
+        Efield_fp_half[lev][2]->setVal(0.);
+        Efield_fp_half[lev][1]->setVal(0.);
+        amrex::Print()<<mf_Ez_tmp.max(0)<<'\n';
+        amrex::Print()<<mf_By_tmp.max(0)<<'\n';
+    
+        for ( MFIter mfi(*Efield_fp_half[lev][0], false); mfi.isValid(); ++mfi )  {
+            Array4<Real> const& Ez = Efield_fp[lev][2]->array(mfi);
+            Array4<Real> const& By = Bfield_fp[lev][1]->array(mfi);
+            Array4<Real> const& Ezh = Efield_fp_half[lev][2]->array(mfi);
+            Array4<Real> const& Byh = Bfield_fp_half[lev][1]->array(mfi);
+            Array4<Real> const& Ez_tmp = mf_Ez_tmp.array(mfi);
+            Array4<Real> const& By_tmp = mf_By_tmp.array(mfi);
+            Array4<Real> const& jz = current_fp[lev][2]->array(mfi);
+            Array4<Real> const& jzo = current_fp_old[lev][2]->array(mfi);
+
+            Box const& tez  = mfi.tilebox(Efield_fp_half[lev][2]->ixType().toIntVect());
+            Box const& tby  = mfi.tilebox(Bfield_fp_half[lev][1]->ixType().toIntVect());
+            amrex::ParallelFor(
+                tez,
+                [=] (int i, int j, int k) {
+                    const amrex::Real gamma_z = - c*mu0*(jz(i,j,0)+jzo(i,j,0))/2._rt + c*(By(i+1,j,0)-By(i,j,0))/dx[0];
+                    Ezh(i,j,0) = Ez_tmp(i,j,0) + dx[2]*gamma_z;
+                    // const amrex::Real gamma_z = c*(By(i+1,j,0)-By(i,j,0))/dx[0];
+                    // Ezh(i,j,0) = Ez_tmp(i,j,0) + dx[2]*gamma_z;
+                });
+            amrex::ParallelFor(
+                tby,
+                [=] (int i, int j, int k) {
+                    amrex::Real phi_y = (Ez(i+1,j  ,0)-Ez(i  ,j  ,0))/(1._rt*dx[0]);
+                    Byh(i,j,0) = By_tmp(i,j,0) + phi_y*dx[2]/c;
+                    // const amrex::Real phi_y_p = (Ez(i+1,j  ,0)-Ez(i  ,j  ,0))/dx[0];
+                    // Byh(i,j,0) = By_tmp(i,j,0) + phi_y_p*dx[2]/c;
+                });
+        }
+
+        Efield_fp_half[lev][2]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+        Bfield_fp_half[lev][1]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+
+        // push half-time Ez and By
+        mf_Ez_tmp.ParallelCopy(*Efield_fp[lev][2],0,0,1);
+        mf_By_tmp.ParallelCopy(*Efield_fp[lev][1],0,0,1);
+        Efield_fp[lev][2]->setVal(0.);
+        Efield_fp[lev][1]->setVal(0.);
+        for ( MFIter mfi(*Efield_fp[lev][0], false); mfi.isValid(); ++mfi )  {
+            Array4<Real> const& Ez = Efield_fp[lev][2]->array(mfi);
+            Array4<Real> const& By = Bfield_fp[lev][1]->array(mfi);
+            Array4<Real> const& Ezh = Efield_fp_half[lev][2]->array(mfi);
+            Array4<Real> const& Byh = Bfield_fp_half[lev][1]->array(mfi);
+            Array4<Real> const& Ez_tmp = mf_Ez_tmp.array(mfi);
+            Array4<Real> const& By_tmp = mf_By_tmp.array(mfi);
+            Array4<Real> const& jz = current_fp[lev][2]->array(mfi);
+            Array4<Real> const& jzo = current_fp_old[lev][2]->array(mfi);
+            Box const& tez  = mfi.tilebox(Efield_fp[lev][2]->ixType().toIntVect());
+            Box const& tby  = mfi.tilebox(Bfield_fp[lev][1]->ixType().toIntVect());
+            amrex::ParallelFor(
+                tez,
+                [=] (int i, int j, int k) {
+                    const amrex::Real gamma_z = - c*mu0*jz(i,j,0)+ c*(Byh(i+1,j,0)-Byh(i,j,0))/dx[0];
+                    Ez(i,j,0) = Ez_tmp(i,j,0) + dx[2]*gamma_z;
+                });
+            amrex::ParallelFor(
+                tby,
+                [=] (int i, int j, int k) {
+                    amrex::Real phi_y = (Ezh(i+1,j  ,0)-Ezh(i  ,j  ,0))/(1._rt*dx[0]);
+                    By(i,j,0) = By_tmp(i,j,0) + phi_y*dx[2]/c;
+
+                    //const amrex::Real phi_y_p = (Ezh(i+1,j  ,0)-Ezh(i  ,j  ,0))/dx[0];
+                    //By(i,j,0) = By_tmp(i,j,0) + phi_y_p*dx[2]/c;
+                });
+        }
+
+        Efield_fp[lev][2]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+        Bfield_fp[lev][1]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
+/*
         // RIP scheme
         amrex::Print()<<"RIP scheme\n";
         constexpr int lev = 0;
@@ -415,6 +623,8 @@ WarpX::OneStep_nosub (Real cur_time)
         Bfield_fp_half[lev][2]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
         NodalSyncE();
         NodalSyncB();
+    amrex::Print()<<Efield_fp[0][2]->max(0)<<'\n';
+    amrex::Print()<<Efield_fp_half[0][2]->max(0)<<'\n';
 
         //FillBoundaryE(guard_cells.ng_alloc_EB);
         //FillBoundaryB(guard_cells.ng_alloc_EB);
@@ -439,7 +649,7 @@ WarpX::OneStep_nosub (Real cur_time)
         Bfield_fp_half[lev][2]->FillBoundary(guard_cells.ng_alloc_EB, Geom(lev).periodicity());
         NodalSyncE();
         NodalSyncB();
-
+*/
         
         //FillBoundaryE(guard_cells.ng_alloc_EB);
         //FillBoundaryB(guard_cells.ng_alloc_EB);
@@ -543,7 +753,7 @@ WarpX::OneStep_sub1 (Real curtime)
     // TODO Remove call to FillBoundaryAux before UpdateAuxilaryData?
     FillBoundaryAux(guard_cells.ng_UpdateAux);
     // iii) Get auxiliary fields on the fine grid, at dt[fine_lev]
-    UpdateAuxilaryData();
+    //UpdateAuxilaryData();
     FillBoundaryAux(guard_cells.ng_UpdateAux);
 
     // iv) Push particles and fields on the fine patch (second fine step)

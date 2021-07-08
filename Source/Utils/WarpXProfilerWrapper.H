@@ -18,7 +18,7 @@ void doDeviceSynchronize(int do_device_synchronize)
         amrex::Gpu::synchronize();
 }
 
-#define WARPX_PROFILE(fname) doDeviceSynchronize(WarpX::do_device_synchronize_before_profile); BL_PROFILE(fname)
+#define WARPX_PROFILE(fname) std::cout<<fname<<"\n"; doDeviceSynchronize(WarpX::do_device_synchronize_before_profile); BL_PROFILE(fname)
 #define WARPX_PROFILE_VAR(fname, vname) doDeviceSynchronize(WarpX::do_device_synchronize_before_profile); BL_PROFILE_VAR(fname, vname)
 #define WARPX_PROFILE_VAR_NS(fname, vname) doDeviceSynchronize(WarpX::do_device_synchronize_before_profile); BL_PROFILE_VAR_NS(fname, vname)
 #define WARPX_PROFILE_VAR_START(vname) doDeviceSynchronize(WarpX::do_device_synchronize_before_profile); BL_PROFILE_VAR_START(vname)

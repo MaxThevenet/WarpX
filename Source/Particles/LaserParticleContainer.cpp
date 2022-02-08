@@ -154,7 +154,7 @@ LaserParticleContainer::LaserParticleContainer (AmrCore* amr_core, int ispecies,
         // Get the position of the plane, along the boost direction, in the lab frame
         // and convert the position of the antenna to the boosted frame
         m_Z0_lab = m_nvec[0]*m_position[0] + m_nvec[1]*m_position[1] + m_nvec[2]*m_position[2];
-        Real Z0_boost = m_Z0_lab/WarpX::gamma_boost;
+        Real const Z0_boost = m_Z0_lab/WarpX::gamma_boost;
         m_position[0] += (Z0_boost-m_Z0_lab)*m_nvec[0];
         m_position[1] += (Z0_boost-m_Z0_lab)*m_nvec[1];
         m_position[2] += (Z0_boost-m_Z0_lab)*m_nvec[2];
@@ -798,17 +798,17 @@ LaserParticleContainer::update_laser_particle (WarpXParIter& pti,
     const auto GetPosition = GetParticlePosition(pti);
     auto       SetPosition = SetParticlePosition(pti);
 
-    Real tmp_p_X_0 = m_p_X[0];
-    Real tmp_p_X_1 = m_p_X[1];
-    Real tmp_p_X_2 = m_p_X[2];
-    Real tmp_nvec_0 = m_nvec[0];
-    Real tmp_nvec_1 = m_nvec[1];
-    Real tmp_nvec_2 = m_nvec[2];
+    Real const tmp_p_X_0 = m_p_X[0];
+    Real const tmp_p_X_1 = m_p_X[1];
+    Real const tmp_p_X_2 = m_p_X[2];
+    Real const tmp_nvec_0 = m_nvec[0];
+    Real const tmp_nvec_1 = m_nvec[1];
+    Real const tmp_nvec_2 = m_nvec[2];
 
     // Copy member variables to tmp copies for GPU runs.
-    Real tmp_mobility = m_mobility;
-    Real gamma_boost = WarpX::gamma_boost;
-    Real beta_boost = WarpX::beta_boost;
+    Real const tmp_mobility = m_mobility;
+    Real const gamma_boost = WarpX::gamma_boost;
+    Real const beta_boost = WarpX::beta_boost;
     amrex::ParallelFor(
         np,
         [=] AMREX_GPU_DEVICE (int i) {
@@ -819,15 +819,16 @@ LaserParticleContainer::update_laser_particle (WarpXParIter& pti,
                             "Error: calculated laser particle velocity greater than c."
                             "Make sure the laser wavelength and amplitude are accurately set.");
             // The velocity is along the laser polarization p_X
-            Real vx = PhysConst::c * v_over_c * tmp_p_X_0;
-            Real vy = PhysConst::c * v_over_c * tmp_p_X_1;
-            Real vz = PhysConst::c * v_over_c * tmp_p_X_2;
-            // When running in the boosted-frame, their is additional velocity along nvec
-            if (gamma_boost > 1.){
-                vx -= PhysConst::c * beta_boost * tmp_nvec_0;
-                vy -= PhysConst::c * beta_boost * tmp_nvec_1;
-                vz -= PhysConst::c * beta_boost * tmp_nvec_2;
-            }
+            // When running in the boosted-frame, there is additional velocity along nvec
+            Real const vx = gamma_boost > 1. ?
+                PhysConst::c * v_over_c*tmp_p_X_0 :
+                PhysConst::c *(v_over_c*tmp_p_X_0 - beta_boost*tmp_nvec_0);
+            Real const vy = gamma_boost > 1. ?
+                PhysConst::c * v_over_c*tmp_p_X_1 :
+                PhysConst::c *(v_over_c*tmp_p_X_1 - beta_boost*tmp_nvec_1);
+            Real const vz = gamma_boost > 1. ?
+                PhysConst::c * v_over_c*tmp_p_X_2 :
+                PhysConst::c *(v_over_c*tmp_p_X_2 - beta_boost*tmp_nvec_2);
             // Get the corresponding momenta
             const Real gamma =
                 static_cast<Real>(gamma_boost/std::sqrt(1. - v_over_c*v_over_c));

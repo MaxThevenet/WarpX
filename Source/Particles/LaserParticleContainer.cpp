@@ -159,7 +159,8 @@ LaserParticleContainer::LaserParticleContainer (AmrCore* amr_core, int ispecies,
         m_position[0] += (Z0_boost-m_Z0_lab)*m_nvec[0];
         m_position[1] += (Z0_boost-m_Z0_lab)*m_nvec[1];
         m_position[2] += (Z0_boost-m_Z0_lab)*m_nvec[2];
-        m_vz_antenna = (m_vz_antenna-WarpX::beta_boost)/(1._rt-WarpX::beta_boost*m_vz_antenna);
+        m_vz_antenna = (m_vz_antenna-WarpX::beta_boost*m_nvec[2]) /
+            (1._rt-WarpX::beta_boost*m_vz_antenna);
     }
 
     // The first polarization vector
@@ -831,7 +832,7 @@ LaserParticleContainer::update_laser_particle (WarpXParIter& pti,
             if (gamma_boost > 1.){
                 vx -= PhysConst::c * beta_boost * tmp_nvec_0;
                 vy -= PhysConst::c * beta_boost * tmp_nvec_1;
-                vz -= PhysConst::c * beta_boost * tmp_nvec_2;
+                vz += PhysConst::c * vz_antenna;
             }
             // Get the corresponding momenta
             const Real gamma =
@@ -849,7 +850,7 @@ LaserParticleContainer::update_laser_particle (WarpXParIter& pti,
 #if defined(WARPX_DIM_3D) || defined(WARPX_DIM_RZ)
             y += vy * dt;
 #endif
-            z += vz * dt + vz_antenna * PhysConst::c * dt;
+            z += vz * dt;
             SetPosition(i, x, y, z);
         }
         );

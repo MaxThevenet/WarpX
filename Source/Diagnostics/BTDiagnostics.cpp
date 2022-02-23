@@ -589,7 +589,7 @@ BTDiagnostics::TMP_FlushLabFrameData ( int i_buffer )
             amrex::DistributionMapping buffer_dm(buffer_ba);
 
             amrex::MultiFab tmp (buffer_ba, buffer_dm, m_varnames.size(), 0);
-            tmp.copy(m_mf_output[i_buffer][lev], 0, 0, m_varnames.size());
+            tmp.ParallelCopy(m_mf_output[i_buffer][lev], 0, 0, m_varnames.size());
 
             std::stringstream ss;
             ss << m_file_name[i_buffer] << "/Level_0/"

@@ -58,7 +58,7 @@ constexpr amrex::Real table_ionization_energies[energies_tab_length]{
     // H
     amrex::Real(13.59843449),
     // He
-    amrex::Real(24.58738880), amrex::Real(54.4177650),
+    amrex::Real(15.42593), amrex::Real(29.99),
     // Li
     amrex::Real(5.39171495), amrex::Real(75.6400964), amrex::Real(122.4543581),
     // Be
